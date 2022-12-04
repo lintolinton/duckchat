@@ -72,4 +72,43 @@ The following messages may be sent to the server. They correspond closely with t
 
 
     •	error (3): The message contains a 64-byte text field with an error message for the user. Here's the layout of the packet:
+    
+ Duckchat S2S protocol   
+    
+In this assignment, your server must take a variable number of parameters. The first two parameters will always be present and are the IP address and port number of the server. The rest of the parameters are IP addresses and port numbers of additional servers. We will provide a script that starts up several servers and connects them together. It’s available here	(
+
+Each server must maintain additional state. Each server already keeps track of which users are in each channel. Now, the server must additionally note if any adjacent servers are subscribed to a channel. The servers subscribed to a channel will form a tree. When a user types a message, the user’s server transmits the message throughout the tree.
+ 
+When a server receives a message from one of its users, the server broadcasts the message to any adjacent servers on the channel. If a server receives a message from another server, it forwards it to any other servers on that channel. Obviously, the server also sends the message to any interested users.
+Remember that this tree is a per-channel overlay built over the existing topology. The topology itself never changes; servers never form new connections once started. The tree is a subset of this topology, and a separate tree exists for each channel.
+For simplicity, you will not be required to implement inter-server versions of List and Who.
+
+Forming Trees
+When a user joins a channel, the user’s server checks to see if it is already subscribed to that channel. If so, the server need not take any additional steps. If not, the server must attempt to locate other servers subscribed to that channel.
+The server begins by sending a Join message to all adjacent servers. When a server receives one of these messages, it checks to see if it is already subscribed. If so, the join message ends there. If not, the server subscribes itself to the channel and forwards the message to all remaining interfaces.
+Intermediate servers must subscribe themselves in this way to ensure there is a path to distant servers on the same channel.
+Removing unnecessary servers from a channel will be done in a lazy fashion. When a server receives a Say message but has nowhere to forward it, it responds with a Leave message. In other words, if a server is a leaf in the tree with no users, it removes itself from the tree. Note that this means that a server has to make sure that it does not have any clients and that it also only has at most one other server subscribed to the channel before it removes itself from the tree. In other words, the server should not have any client in the particular channel and it should know about only one other server in the channel (the one that is sending messages to it) when it decides to remove itself from the tree.
+To guard against loops, additional steps must be taken. Inter-server Say messages must include a unique identifier, and each server must maintain a list of recent identifiers. When the server receives a new message, it checks against this list. If a duplicate is detected, the server knows a loop has been found. It discards the Say message and sends a Leave message to the sender. The Leave message is not forwarded further. This removes the extra link from the loop.
+Finally, to guard against network failures, soft-state Joins will be used. Every server must renew its subscriptions by sending a new Join message once per minute. A server interprets a two-minute interval with no Join as a Leave. This ensures that a crashed server will not split the tree.
+There is no simple way for a server to generate globally unique identifiers. Therefore, the Imaginarians have agreed to settle for identifiers that are unique with high probability. To accomplish this, servers use their random number generator to create unique identifiers. Servers must seed their random number generator by reading bytes from /dev/urandom.
+ 
+Protocol
+
+The protocol between clients and servers is unchanged. However, the new DuckChat Server-to-Server protocol must be supported. Like the DuckChat client-server protocol, each message begins with a 32- bit type identifier. There are just three messages in the DuckChat Server-to-Server protocol:
+•	S2S Join (8): The message contains a 32-byte channel name. Here’s the layout of the packet:
+
+•	S2S Leave (9): The message contains a 32-byte channel name. Here’s the layout of the packet:
+
+•	S2S Say (10): The message contains a 64-bit unique identifier, a 32-byte username, a 32-byte channel name, and a 64-byte text field. Here's the layout of the packet:
+
+Output
+
+ 
+To simplify debugging and grading, servers must output a message each time they transmit or receive a message. Because all the servers will typically be writing to the same terminal, it is necessary to label each message with the server’s IP address and port number. These messages must follow these examples:
+
+
+Note that the server that receives or sends the message is always on the left side. Who the server receives from or sends to is on the right side. Also, note that the 3rd line is a client (at 127.0.0.1:8295) sending a say message to the server at 127.0.0.1:12792.
+
+ 
+ 
  
