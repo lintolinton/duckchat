@@ -1,4 +1,8 @@
 **DuckChat**
+
+
+
+
 Chat or Instant Messaging is one of the most popular applications on the Internet. In this assignment, you will develop a chat application that speaks the DuckChat protocol. This will familiarize you with the task of implementing a network protocol and introduce you to the Berkeley socket API. The specification for DuckChat is provided for you. Since everyone will be implementing the same protocol, your chat programs will be able to interoperate with one another.
 DuckChat is a simple client-server protocol. You should implement both the client and server sides of the DuckChat protocol for this assignment. Users run client software to connect to a server and communicate with other connected users. Users join a channel (sometimes called a "chat room") and communicate with other people on the channel. Users may join as many channels as they please and can even create their own channels.
 Client user interface
